@@ -3,27 +3,35 @@ from typing import Callable
 
 alfa = 0.1
 
-def exponential_func(x: list[float]) -> list[float]:
-    return [( math.exp(-x[0]) * x[0] * (x[0]**2-x[0]-1) )]
+# Desisti de deixar genérico para a sáida de uma função
+# Ao invés de ser apenas um valor ser um vetor de valores
+# Estava dando trabalho e creio que para esse trabalho foge do escopo
+def exponential_func(x: list[float]) -> float: 
+    return ( math.exp(-x[0]) * x[0] * (x[0]**2-x[0]-1) )
 
 def numerical_grad_op(
     func: Callable,
     args: list[float],
     dh: float = 0.01
 ) -> list[float]:
-
-    args1 = [x+dh for x in args]
-    args2 = [x-dh for x in args]
-
-    f1 = func(args1)
-    f2 = func(args2)
-
+    
     grad = []
-    for y1,y2 in zip(f1,f2):
-        grad.append((y1-y2)/(2*dh))
-    
-    #print(f"Gradiente : {grad}")
-    
+
+    for i in range(len(args)):
+
+        args_plus = args.copy()
+        args_minus = args.copy()
+
+        args_plus[i] += dh
+        args_minus[i] -= dh
+
+        f1 = func(args_plus)
+        f2 = func(args_minus)
+
+        grad.append((f1-f2)/(2*dh))
+        
+        #print(f"Gradiente : {grad}")
+        
     return grad
 
 def grad_descent(

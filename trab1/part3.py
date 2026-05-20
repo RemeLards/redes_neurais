@@ -75,7 +75,7 @@ def main():
     print(f"Algorítmo de Descida de Gradiente : {result}")
     for i, (x, f, df) in enumerate(zip(metrics.x, metrics.f, metrics.df)):
         # Sei que é unidimensional
-        print(f"Iteração {i:4d} | x={x[0]:+8.6f} | f(x)={f[0]:+8.6f} | f'(x)={df[0]:+8.6f}")
+        print(f"Iteração {i:4d} | x={x[0]:+8.6f} | f(x)={f:+8.6f} | f'(x)={df[0]:+8.6f}")
 
 
 
