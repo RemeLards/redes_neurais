@@ -1,6 +1,7 @@
 from part1 import (
     grad_descent,
     exponential_func,
+    numerical_grad_op,
     alfa,
 ) 
 from sympy import (
@@ -11,10 +12,9 @@ from sympy import (
 )
 import numpy as np
 
-alfa = 0.01
-
 def main():
-    print(f"Próximo vetor de entrada         {grad_descent(exponential_func,[1])}")
+    next_x = grad_descent(exponential_func,numerical_grad_op,[1])
+    print(f"Próximo vetor de entrada         {next_x}")
 
     x_symbol = symbols('x')
     expr = exp(-x_symbol) * x_symbol*(x_symbol**2-x_symbol-1)

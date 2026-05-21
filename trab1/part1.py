@@ -12,9 +12,10 @@ def exponential_func(x: list[float]) -> float:
 def numerical_grad_op(
     func: Callable,
     args: list[float],
-    dh: float = 0.01
+    **kwargs: dict,
 ) -> list[float]:
     
+    dh = kwargs.get("dh") if kwargs.get("dh") else 0.01
     grad = []
 
     for i in range(len(args)):
@@ -35,12 +36,19 @@ def numerical_grad_op(
     return grad
 
 def grad_descent(
-    func: Callable, 
+    func: Callable,
+    grad_func: Callable, 
     args: list[float],
-    dh: float = 0.01,
-    alfa: float = 0.1,
+    **kwargs: dict,
 ) -> list[float]:
-    grad = numerical_grad_op(func,args,dh)
+    
+    alfa = kwargs.get("alfa") if kwargs.get("alfa") else 0.1
+
+    grad = grad_func(
+        func,
+        args,
+        **kwargs,
+    )
     next_x = []
     for dy,x in zip(grad,args):
         next_x.append(x-alfa*dy)
@@ -48,7 +56,7 @@ def grad_descent(
 
 
 def main():
-    print(f"Próximo vetor de entrada {grad_descent(exponential_func,[1])}")
+    print(f"Próximo vetor de entrada {grad_descent(exponential_func,numerical_grad_op,[1])}")
 
 
 if __name__ == "__main__":
