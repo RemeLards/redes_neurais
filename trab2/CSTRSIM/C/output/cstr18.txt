@@ -1,0 +1,36 @@
+#
+# 1. Title: CSTR Simulator output
+#
+# 2. Source:
+#      CSTR Simulator
+#
+# 3. Number of Instances: See the file used to configure the simulator
+#
+# 4. Number of Attributes: 18 numeric and the class
+#
+# 5. Attribute Information:
+#    1. Feed concentration
+#    2. Feed flowrate
+#    3. Feed temperature
+#    4. Reactor level
+#    5. Product A concentration
+#    6. Product B concentration
+#    7. Reactor temperature
+#    8. Coolant flowrate
+#    9. Product flowrate
+#    10. Coolant inlet temperature
+#    11. Coolant inlet pressure
+#    12. Level controller output
+#    13. Coolant controller output
+#    14. Coolant setpoint
+#    15. Inventory
+#    16. Mol balance
+#    17. Cooling water head loss
+#    18. Effluent head loss
+#    19. Class
+#
+# 6. Missing Attribute Values: None
+#
+#
+#
+18

@@ -1,0 +1,56 @@
+#
+# 1. Title: CSTR Simulator output
+#
+# 2. Source:
+#      CSTR Simulator
+#
+# 3. Number of Instances: See the file used to configure the simulator
+#
+# 4. Number of Attributes: 38 numeric and the class
+#
+# 5. Attribute Information:
+#    1. Tank head
+#    2. Outlet tank head
+#    3. Head after pipe 1
+#    4. Head after valve
+#    5. Head after pipe 2
+#    6. Leak head
+#    7. Tank Inlet flow rate
+#    8. Flow rate in pipe 1
+#    9. Flow rate in pipe 2
+#    10. Leak flow rate
+#    11. Reactor temperature
+#    12. Cooling system inlet head
+#    13. Head after pipe 1
+#    14. Head after valve
+#    15. Head after jacket obstruction
+#    16. Head after pipe 2
+#    17. Leak to environment head
+#    18. Leak to tank head
+#    19. Cooling system inlet flow rate (pipe 1)
+#    20. Flow rate in pipe 2
+#    21. Leak to environment flow rate
+#    22. Leak to tank flow rate
+#    23. Coolant inlet temperature
+#    24. Jacket temperature
+#    25. Generation rate of product B
+#    26. Generation rate of product C
+#    27. Feed temperature
+#    28. Feed concentration
+#    29. Concentration of reactant A
+#    30. Concentration of product B
+#    31. Concentration of product C
+#    32. Level controller output
+#    33. Coolant controller output
+#    34. Coolant setpoint
+#    35. Inventory
+#    36. Mol balance
+#    37. Cooling water head loss
+#    38. Effluent head loss
+#    39. Class
+#
+# 6. Missing Attribute Values: None
+#
+#
+#
+38
