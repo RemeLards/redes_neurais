@@ -16,13 +16,13 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     confusion_matrix,
-    classification_report,
+    ConfusionMatrixDisplay,
 ) 
 import matplotlib.pyplot as plt
 
 
 FAULT_CHOSEN=7
-SIMULATION_RUNS=5
+SIMULATION_RUNS=20
 
 
 def run_cst(
@@ -202,25 +202,24 @@ def train_classifier(
 
 
 def plot_loss(
+    ax,
     train_loss: np.ndarray,
     val_loss: np.ndarray,
 ) -> None:
     epochs_range = range(1, len(train_loss) + 1)
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs_range, train_loss, label='Treino', color='blue', linewidth=2)
-    plt.plot(epochs_range, val_loss, label='Validação', color='red', linewidth=2, linestyle='--')
+    ax.plot(epochs_range, train_loss, label='Treino', color='blue', linewidth=2)
+    ax.plot(epochs_range, val_loss, label='Validação', color='red', linewidth=2)
 
-    plt.title('Loss durante o Treinamento', fontsize=14, fontweight='bold')
-    plt.xlabel('Épocas', fontsize=12)
-    plt.ylabel('Erro Quadrático Médio (MSE)', fontsize=12)
+    ax.set_title('Loss durante o Treinamento', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Épocas', fontsize=12)
+    ax.set_ylabel('Erro Quadrático Médio (MSE)', fontsize=12)
 
-    plt.legend(fontsize=12)
-    plt.grid(True, linestyle=':', alpha=0.6)
-    plt.savefig('curva_de_loss.png', dpi=300, bbox_inches='tight')
-    plt.close('all')
+    ax.legend(fontsize=12)
+    ax.grid(True, linestyle=':', alpha=0.6)
     
 
 def test_classifier(
+    ax,
     dataset: dict,
     model: np.ndarray
 ) -> tuple[np.ndarray,list,list]:
@@ -231,20 +230,20 @@ def test_classifier(
     x_test_with_bias = np.concatenate((bias_test, x_test), axis=1) 
     y_pred,_ = loss_calc(model,x_test_with_bias,y_test)
     
-    y_pred_classes = (y_pred >= 0.5).astype(int) # Já que  0 = Normal, 1 = Faulty
+    y_pred_classes = (y_pred >= 0.5).astype(int) # Já que  0 = Normal, 1 = Faulty -> score
 
     acuracia = accuracy_score(y_test, y_pred_classes)
     recall = recall_score(y_test, y_pred_classes)
     f1 = f1_score(y_test, y_pred_classes)
     cm = confusion_matrix(y_test, y_pred_classes)
-    tn, fp, fn, tp = cm.ravel()
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Normal', 'Falha'])
+    disp.plot(ax=ax, cmap='Blues', values_format='d', colorbar=False)
+    ax.set_title('Matriz de Confusão', fontsize=12, fontweight='bold')
 
     print(f"Acurácia:       {acuracia:.4f}")
-    print(f"Recall:  {recall:.4f}")
+    print(f"Recall:         {recall:.4f}")
     print(f"F1-Score:       {f1:.4f}")
 
-    print("\nMatriz de Confusão:")
-    print(cm)
 
 
 
@@ -279,9 +278,17 @@ def main():
     )
     data_std = data_standartization(data=pd_data)
     dataset = data_stratification_split(data=data_std)
-    model,train_seq,val_seq = train_classifier(dataset=dataset,learning_rate=0.1,epochs=2000)
-    # test_classifier(dataset=dataset,model=model)
-    plot_loss(train_loss=train_seq,val_loss=val_seq)
+    model,train_seq,val_seq = train_classifier(dataset=dataset,learning_rate=0.01,epochs=2000)
+
+    _, ax = plt.subplots(1, 2, figsize=(14, 6))
+    plot_loss(ax[0],train_loss=train_seq,val_loss=val_seq)
+    test_classifier(ax[1],dataset=dataset,model=model)
+
+    plt.tight_layout()
+    #plt.savefig('resultado_modelo.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+
 
 
 
