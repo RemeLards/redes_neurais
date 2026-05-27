@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 
 FAULT_CHOSEN=7
-SIMULATION_RUNS=20
+SIMULATION_RUNS=3
 
 
 def run_cst(
@@ -69,6 +69,9 @@ def data_standartization(
     df_std = x_std_df.copy()
     df_std['CLASS'] = y.values
 
+    # Remove linhas com valor Nulo
+    df_std = df_std.dropna()
+
     return df_std
 
 
@@ -77,6 +80,7 @@ def data_stratification_split(
 ) -> dict:
     x = data.drop(columns=['CLASS'])
     y = data['CLASS']
+
 
     x_train, x_temp, y_train, y_temp = train_test_split(
         x, y, 
@@ -267,7 +271,7 @@ def main():
         Fault(
             id=FAULT_CHOSEN,
             EXTENT0=10000,
-            DELAY=1,
+            DELAY=1.0,
             TC=0.01
             ),
         )
