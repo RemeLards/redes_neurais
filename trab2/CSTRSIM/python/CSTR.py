@@ -788,7 +788,10 @@ class CSTR():
             self.MEAS1[s] = (self.THETA*self.MEAS2[s] +
                              (1.0 - self.THETA)*self.MEAS1[s])
 
-    def eval_constraints(self):
+    def eval_constraints(
+        self,
+        log_eval: bool = True
+    ):
         # EVALUATE QUANTITATIVE CONSTRAINTS:
 
         # -------------------------------------------------------------
@@ -797,14 +800,15 @@ class CSTR():
         difFLOW1FLOW4 = self.MEAS2[1] - self.MEAS2[8]
         # self.FINTEG += difFLOW1FLOW4 * self.DT                                # <<<<<<<<<<<< OLD : Q_1 - Q_4
         self.FINTEG += (difFLOW1FLOW4 + self.FLOW[5] - self.FLOW[2]) * self.DT  # <<<<<<<<<<<< CORRECTION : Q_1 - Q_4 + Q_6 - Q_3
-        print('GREP: k=%10d' % self.iter, 'FINTEG=%20.10f' % self.FINTEG,
-              'MEAS(2,2)=FLOW(1)=%20.10f' % self.MEAS2[1],
-              'MEAS(9,2)=FLOW(4)=%20.10f' %  self.MEAS2[8],
-              'FLOW(3)=%20.10f' % self.FLOW[2], 'dif=%30.20e' % difFLOW1FLOW4,
-              'MASSBAL=%30.20e' % self.MASSBAL,
-              'dbgvar0=%30.20e' % self.dbgvar[0])
-        '''
-        '''
+        if log_eval:
+            print('GREP: k=%10d' % self.iter, 'FINTEG=%20.10f' % self.FINTEG,
+                'MEAS(2,2)=FLOW(1)=%20.10f' % self.MEAS2[1],
+                'MEAS(9,2)=FLOW(4)=%20.10f' %  self.MEAS2[8],
+                'FLOW(3)=%20.10f' % self.FLOW[2], 'dif=%30.20e' % difFLOW1FLOW4,
+                'MASSBAL=%30.20e' % self.MASSBAL,
+                'dbgvar0=%30.20e' % self.dbgvar[0])
+            '''
+            '''
 
         # MEAS(4,2)=L, L(t=0)=0.2 ==> A*L_0=3.0
         VOLMEAS = self.TAREA * self.MEAS2[3]
@@ -901,7 +905,10 @@ class CSTR():
         print()
         # print(self.RE, ';', self.RC)
 
-    def run(self):
+    def run(
+        self,
+        log_run: bool = True,
+    ):
         print('Running ...')
         done = False
         self.shutdown = False
@@ -931,7 +938,7 @@ class CSTR():
 
             self.measure()
 
-            self.eval_constraints()
+            self.eval_constraints(log_eval=log_run)
 
             self.iter += 1
             self.TIME += self.DT
@@ -944,9 +951,10 @@ class CSTR():
                 self.MINUTES += 1
                 # print('measure_out at =%7d of %7d MINUTES=' % (self.iter, self.maxiter)); # input('...')
             # self.peepvars()  # ; input('...')
-            print('iter=%10d of %10d -- TIME=%8.2f of %8.2f [min]' %
-                  (self.iter, self.maxiter, self.MINUTES, self.timehoriz),
-                  end='\r')
+            if log_run:
+                print('iter=%10d of %10d -- TIME=%8.2f of %8.2f [min]' %
+                    (self.iter, self.maxiter, self.MINUTES, self.timehoriz),
+                    end='\r')
             done = self.iter >= self.maxiter  # - 1
             # if self.iter == 1: raise Exception()
 

@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import math
+from copy import deepcopy
 
 from CSTRSIM.python.CSTR import(
     CSTR,
@@ -15,11 +17,12 @@ from sklearn.metrics import (
     accuracy_score,
     recall_score,
     f1_score,
+    precision_score,
     confusion_matrix,
     ConfusionMatrixDisplay,
 ) 
 import matplotlib.pyplot as plt
-
+from typing import Callable
 
 FAULT_CHOSEN=7
 SIMULATION_RUNS=3
@@ -31,7 +34,7 @@ def run_cst(
 
     cstr = CSTR(**cstr_sim_config)
     cstr.open()
-    cstr.run()
+    cstr.run(log_run=False)
     cstr.close()
     return cstr
 
@@ -108,18 +111,19 @@ def data_stratification_split(
 
 
 def concat_pds(
-  cstr_normal_list: list[CSTR],
-  cstr_faulty_list:  list[CSTR],    
+  cstr_normal_list: list[CSTR] | None,
+  cstr_faulty_list:  list[CSTR] | None,    
 ) -> pd.DataFrame:
     df_final = pd.DataFrame()
 
-    for normal in cstr_normal_list:
-        df = pd.read_csv(normal.datafn, sep=';')
-        df_final = pd.concat([df_final,df],ignore_index=True)
-    
-    for faulty in cstr_faulty_list:
-        df = pd.read_csv(faulty.datafn, sep=';')
-        df_final = pd.concat([df_final,df],ignore_index=True)
+    if cstr_normal_list:
+        for normal in cstr_normal_list:
+            df = pd.read_csv(normal.datafn, sep=';')
+            df_final = pd.concat([df_final,df],ignore_index=True)
+    if cstr_faulty_list:
+        for faulty in cstr_faulty_list:
+            df = pd.read_csv(faulty.datafn, sep=';')
+            df_final = pd.concat([df_final,df],ignore_index=True)
 
     # Varíaveis de restrição utilizadas no simulador
     # não são importante para o classificador pois não são medidas sensoriais e sim medidas do processo (restrições)
@@ -149,15 +153,19 @@ def loss_calc(
     x: np.ndarray,
     y: np.ndarray
 ) -> tuple[np.ndarray,float]:
+    # print(f"W shape {w.shape}")
+    # print(f"X shape {x.shape}")
     y_pred = x @ w
-    loss = np.sum((y - y_pred) ** 2)/x.shape[0]
-    return y_pred,loss
+    loss = np.sum((y - y_pred) ** 2,axis=0)/x.shape[0]
+    # print(f"Loss: {loss}")
+    loss_norm = np.linalg.norm(loss)
+    return y_pred,loss_norm
 
 
 def train_classifier(
     dataset: dict,
     learning_rate: float,
-    epochs: int
+    epochs: int,
 ) -> tuple[np.ndarray,list,list]:
     x_train = dataset["train"][0]
     y_train = dataset["train"][1]
@@ -170,7 +178,7 @@ def train_classifier(
     x_val_with_bias = np.concatenate((bias_val, x_val), axis=1) 
 
     epoch_n = 0
-    w = np.zeros((x_train_with_bias.shape[1],1)) # bias included
+    w = np.zeros((x_train_with_bias.shape[1],y_train.shape[1])) # bias included
     train_loss_seq = []
     val_loss_seq = []
     train_size = x_train_with_bias.shape[0]
@@ -179,17 +187,17 @@ def train_classifier(
         # print(f"y_pred = {y_pred.shape}")
         y_pred,loss = loss_calc(w,x_train_with_bias,y_train)
         # print(f"loss = {loss.shape}")
-        Lw = -2*(y_train - y_pred).T @ x_train_with_bias
-        Lw /= train_size # Normalizar pelo quantidade do lote
+        dLw = -2*(y_train - y_pred).T @ x_train_with_bias
+        dLw /= train_size # Normalizar pelo quantidade do lote
         # print(f"Lw = {Lw.shape}")
-        w -= learning_rate*Lw.T
+        w -= learning_rate*dLw.T
 
         train_loss_seq.append(loss)
         _,loss_val = loss_calc(w,x_val_with_bias,y_val)
         val_loss_seq.append(loss_val)
 
         if epoch_n % 100 == 0:
-            print(f"Época {epoch_n} - Loss: {loss:.4f}")
+            print(f"Epoch {epoch_n} - Loss: {loss:.4f}")
         epoch_n +=1
 
         if epoch_n % 100 == 0:
@@ -209,12 +217,13 @@ def plot_loss(
     ax,
     train_loss: np.ndarray,
     val_loss: np.ndarray,
+    text: str,
 ) -> None:
     epochs_range = range(1, len(train_loss) + 1)
     ax.plot(epochs_range, train_loss, label='Treino', color='blue', linewidth=2)
     ax.plot(epochs_range, val_loss, label='Validação', color='red', linewidth=2)
 
-    ax.set_title('Loss durante o Treinamento', fontsize=14, fontweight='bold')
+    ax.set_title(f'Loss durante o Treinamento ({text})', fontsize=14, fontweight='bold')
     ax.set_xlabel('Épocas', fontsize=12)
     ax.set_ylabel('Erro Quadrático Médio (MSE)', fontsize=12)
 
@@ -222,10 +231,40 @@ def plot_loss(
     ax.grid(True, linestyle=':', alpha=0.6)
     
 
+def binary_pred(
+    y: np.ndarray,
+) -> np.ndarray:
+    return (y >= 0.5).astype(int) # Já que  0 = Normal, 1 = Faulty -> score
+
+
+def one_hot_pred(
+    y: np.ndarray,
+) -> np.ndarray:
+    softmax = []
+    for y_array in y:
+        den = 0
+        score = []
+        for y_val in y_array:
+            den+=math.e**y_val
+        for y_val in y_array:
+            score.append((math.e**y_val)/den)
+        softmax.append(np.array(score))
+
+    pred = []
+    for score in softmax:
+        pred.append(np.argmax(score)) 
+    
+    return np.array(pred)
+
+    
+    
+
 def test_classifier(
     ax,
     dataset: dict,
-    model: np.ndarray
+    model: np.ndarray,
+    pred: Callable,
+    text: str,
 ) -> tuple[np.ndarray,list,list]:
     x_test = dataset["test"][0]
     y_test = dataset["test"][1]
@@ -234,28 +273,53 @@ def test_classifier(
     x_test_with_bias = np.concatenate((bias_test, x_test), axis=1) 
     y_pred,_ = loss_calc(model,x_test_with_bias,y_test)
     
-    y_pred_classes = (y_pred >= 0.5).astype(int) # Já que  0 = Normal, 1 = Faulty -> score
+    y_pred_classes = pred(y_pred)
+    y_test = pred(y_test) # its easier to just convert both into one variable classification
 
     acuracia = accuracy_score(y_test, y_pred_classes)
     recall = recall_score(y_test, y_pred_classes)
+    precision = precision_score(y_test, y_pred_classes)
     f1 = f1_score(y_test, y_pred_classes)
     cm = confusion_matrix(y_test, y_pred_classes)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Normal', 'Falha'])
-    disp.plot(ax=ax, cmap='Blues', values_format='d', colorbar=False)
-    ax.set_title('Matriz de Confusão', fontsize=12, fontweight='bold')
+    disp.plot(
+        ax=ax,
+        cmap='Blues',
+        values_format='d',
+        colorbar=True
+    )
+    ax.set_title(f'Matriz de Confusão ({text})', fontsize=12, fontweight='bold')
+    ax.set_ylabel("")
+    ax.set_xlabel(
+        f"Acurácia={acuracia:.3f} | "
+        f"Precisão={precision:.3f} | "
+        f"Recall={recall:.3f} | "
+        f"F1={f1:.3f}"
+    )
 
     print(f"Acurácia:       {acuracia:.4f}")
     print(f"Recall:         {recall:.4f}")
     print(f"F1-Score:       {f1:.4f}")
+    print(f"Precision:      {precision:.4f}")
 
 
+def to_one_hot(
+    dataset: dict
+) -> None:
+    n_classes = 2
+    for dataset_type in dataset:
+        y_array = dataset[dataset_type][1]
+        y_array = y_array.astype(np.int8)
+        dataset[dataset_type][1] = np.eye(n_classes)[y_array]
+        dataset[dataset_type][1] = dataset[dataset_type][1].astype(np.float32).reshape((y_array.shape[0],n_classes))
+        # print(f"Dataset {dataset[dataset_type][1]} ")
 
 
-    
+  
 def main():
     exp =  {
         'theta': 1,
-        'randseed': 1234,
+        'randseed': 1240,
         'fortran_rand': False,
         'timehoriz': 100,
         'faults': ()
@@ -281,12 +345,79 @@ def main():
         cstr_faulty_list=cstr_faulty_list,
     )
     data_std = data_standartization(data=pd_data)
-    dataset = data_stratification_split(data=data_std)
-    model,train_seq,val_seq = train_classifier(dataset=dataset,learning_rate=0.01,epochs=2000)
+    dataset_bin = data_stratification_split(data=data_std)
+    model_bin,train_seq,val_seq = train_classifier(dataset=dataset_bin,learning_rate=0.01,epochs=2000)
+    _, ax = plt.subplots(3, 2, figsize=(14, 6))
+    plot_loss(
+        ax[0,0],
+        train_loss=train_seq,
+        val_loss=val_seq,
+        text="Binary Classifier"
+    )
+    test_classifier(
+        ax[0,1],
+        dataset=dataset_bin,
+        model=model_bin,
+        pred=binary_pred,
+        text="Binary Classifier"
+    )
 
-    _, ax = plt.subplots(1, 2, figsize=(14, 6))
-    plot_loss(ax[0],train_loss=train_seq,val_loss=val_seq)
-    test_classifier(ax[1],dataset=dataset,model=model)
+    dataset_onehot = deepcopy(dataset_bin)
+    to_one_hot(dataset=dataset_onehot)
+    model_onehot,train_seq,val_seq = train_classifier(dataset=dataset_onehot,learning_rate=0.01,epochs=2000)
+    plot_loss(
+        ax[1,0],
+        train_loss=train_seq,
+        val_loss=val_seq,
+        text="One Hot Classifier"
+    )
+    test_classifier(
+        ax[1,1],
+        dataset=dataset_onehot,
+        model=model_onehot,
+        pred=one_hot_pred,
+        text="One Hot Classifier"
+    )
+
+    ### Testando com falhas mais severas com variáveis diferentes
+    exp['faults'] = (
+        Fault(
+            id=FAULT_CHOSEN,
+            EXTENT0=20000,
+            DELAY=10.0,
+            TC=0.01
+            ),
+        )
+    cstr_faulty_list = generate_runs(exp,SIMULATION_RUNS*5)
+    pd_data = concat_pds(
+        cstr_normal_list=cstr_normal_list,
+        cstr_faulty_list=cstr_faulty_list,
+    )
+    data_std = data_standartization(data=pd_data)
+    x = data_std.drop(columns=['CLASS'])
+    y = data_std['CLASS']
+    dataset_bin = {
+        "test" : [x.to_numpy(),y.to_numpy().reshape(-1, 1)]
+    }
+    dataset_bin = data_stratification_split(data=data_std)
+    dataset_onehot = deepcopy(dataset_bin)
+    to_one_hot(dataset=dataset_onehot)
+    test_classifier(
+        ax[2,0],
+        dataset=dataset_bin,
+        model=model_bin,
+        pred=binary_pred,
+        text="Binary Classifier [Different Test Set]"
+    )
+    test_classifier(
+        ax[2,1],
+        dataset=dataset_onehot,
+        model=model_onehot,
+        pred=one_hot_pred,
+        text="One Hot Classifier [Different Test Set]"
+    )
+
+
 
     plt.tight_layout()
     #plt.savefig('resultado_modelo.png', dpi=300, bbox_inches='tight')
