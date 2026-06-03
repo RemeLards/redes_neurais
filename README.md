@@ -1,6 +1,6 @@
 # Como rodar o código
 
-O codigo fez o uso do [uv](https://docs.astral.sh/uv/getting-started/installation/) para a criação do ambiente python. Antes de tentar rodar os códigos instale o uv.
+O codigo faz o uso do [uv](https://docs.astral.sh/uv/getting-started/installation/) para a criação do ambiente python. Antes de tentar rodar os códigos instale o uv.
 
 # Primeiro Trabalho
 
