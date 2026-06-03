@@ -10,7 +10,6 @@ from CSTRSIM.python.CSTR import(
 # from CSTRSIM.python.CSTR_plot import (
 #     dataframe2sklearn,
 # )
-from copy import deepcopy
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -18,6 +17,7 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     precision_score,
+    roc_auc_score,
     confusion_matrix,
     ConfusionMatrixDisplay,
 ) 
@@ -220,12 +220,12 @@ def plot_loss(
     text: str,
 ) -> None:
     epochs_range = range(1, len(train_loss) + 1)
-    ax.plot(epochs_range, train_loss, label='Treino', color='blue', linewidth=2)
-    ax.plot(epochs_range, val_loss, label='Validação', color='red', linewidth=2)
+    ax.plot(epochs_range, train_loss, label='Training', color='blue', linewidth=2)
+    ax.plot(epochs_range, val_loss, label='Validation', color='red', linewidth=2)
 
-    ax.set_title(f'Loss durante o Treinamento ({text})', fontsize=14, fontweight='bold')
-    ax.set_xlabel('Épocas', fontsize=12)
-    ax.set_ylabel('Erro Quadrático Médio (MSE)', fontsize=12)
+    ax.set_title(f'Loss ({text})', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Epochs', fontsize=12)
+    ax.set_ylabel('MSE', fontsize=12)
 
     ax.legend(fontsize=12)
     ax.grid(True, linestyle=':', alpha=0.6)
@@ -257,8 +257,6 @@ def one_hot_pred(
     return np.array(pred)
 
     
-    
-
 def test_classifier(
     ax,
     dataset: dict,
@@ -280,27 +278,29 @@ def test_classifier(
     recall = recall_score(y_test, y_pred_classes)
     precision = precision_score(y_test, y_pred_classes)
     f1 = f1_score(y_test, y_pred_classes)
+    roc_auc = roc_auc_score(y_test,y_pred_classes)
     cm = confusion_matrix(y_test, y_pred_classes)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Normal', 'Falha'])
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['Normal', 'Faulty'])
     disp.plot(
         ax=ax,
         cmap='Blues',
         values_format='d',
         colorbar=True
     )
-    ax.set_title(f'Matriz de Confusão ({text})', fontsize=12, fontweight='bold')
+    ax.set_title(f'Confusion Matrix ({text})', fontsize=12, fontweight='bold')
     ax.set_ylabel("")
     ax.set_xlabel(
-        f"Acurácia={acuracia:.3f} | "
-        f"Precisão={precision:.3f} | "
-        f"Recall={recall:.3f} | "
-        f"F1={f1:.3f}"
+        f"Accuracy={acuracia:.3f} | "
+        f"Precision={precision:.3f} | "
+        f"Recall={recall:.3f} | \n"
+        f"F1={f1:.3f} | "
+        f"ROC-AUC={roc_auc:.3f}"
     )
 
-    print(f"Acurácia:       {acuracia:.4f}")
-    print(f"Recall:         {recall:.4f}")
-    print(f"F1-Score:       {f1:.4f}")
-    print(f"Precision:      {precision:.4f}")
+    # print(f"Acurácia:       {acuracia:.4f}")
+    # print(f"Recall:         {recall:.4f}")
+    # print(f"F1-Score:       {f1:.4f}")
+    # print(f"Precision:      {precision:.4f}")
 
 
 def to_one_hot(
@@ -420,7 +420,7 @@ def main():
 
 
     plt.tight_layout()
-    #plt.savefig('resultado_modelo.png', dpi=300, bbox_inches='tight')
+    plt.savefig('resultado_modelo.png', dpi=300, bbox_inches='tight')
     plt.show()
 
 

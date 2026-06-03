@@ -13,11 +13,16 @@ from pydantic import (
 )
 import math
 import matplotlib.pyplot as plt
+import numpy as np
 
 class GradDescMetrics(BaseModel):
     x: list[list[float]] = []
     f: list[float] = []
     df: list[float] = []
+
+
+def exponential_func_np(x: np.ndarray) -> np.ndarray: 
+    return ( np.exp(-x) * x * (x**2-x-1) )
 
 def grad_descent_algorithm(
     func: Callable,
@@ -92,25 +97,50 @@ def main():
     print(f"Algorítmo de Descida de Gradiente : {result}")
     print(f"Valor da função:                    {exponential_func(result)}")
     
-    fig, ax = plt.subplots(2, 1, figsize=(8, 6))
+    fig, ax = plt.subplots(3, 1, figsize=(8, 6))
 
     x = [x for x in range(len(metrics.x))]
 
     ax[0].scatter(x,metrics.f)
     ax[0].set_title("f(x) x Iteração")
     ax[0].grid()
-    plt.xlabel("Iteração")
-    plt.ylabel("f(x)")
+    ax[0].set_xlabel("Iteração")
+    ax[0].set_ylabel("f(x)")
 
 
     # gráfico da derivada
     ax[1].scatter(x,metrics.df,color="red")
     ax[1].set_title("f'(x) x Iteração")
     ax[1].grid()
-    plt.xlabel("Iteração")
-    plt.ylabel("f'(x)")
+    ax[1].set_xlabel("Iteração")
+    ax[1].set_ylabel("f(x)'")
+
+    x = np.linspace(-1, 5, 100)
+    y = exponential_func_np(x)
+    ax[2].set_title("Trajetória da descida de gradiente")
+    ax[2].set_ylabel("f(x)")
+    ax[2].set_xlabel("x")
+    ax[2].plot(x, y, 'b', label='f(x)')
+    ax[2].grid()
+    step = 5
+    xs = metrics.x[::step]
+    ys = metrics.f[::step]
+    for i in range(len(xs)-1):
+        ax[2].annotate(
+            "",
+            xy=(xs[i+1][0], ys[i+1]),
+            xytext=(xs[i][0], ys[i]),
+            arrowprops=dict(arrowstyle="->", lw=1, mutation_scale=20),
+        )
+    ax[2].scatter(
+        metrics.x[::step],
+        metrics.f[::step],
+        s=50,
+        color="r"
+    )
 
     plt.tight_layout()
+    plt.savefig('trab1_part3.png', dpi=300, bbox_inches='tight')
     plt.show()
 
 

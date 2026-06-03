@@ -22,8 +22,9 @@ def bi_dim_func(x: list[float]) -> float:
     return ( (4 - 2.1 * x[0]**2 + x[0]**2 / 3 ) * x[0]**3 + x[0] * x[1] + (-4 + 4 * x[1]**2) *x[1]**2 )
 
 
-def bi_dim_func_np(x,y) -> float:
+def bi_dim_func_np(x,y) -> np.ndarray:
     return ( (4 - 2.1 * x**2 + x**2 / 3 ) * x**3 + x * y + (-4 + 4 * y**2) *y**2 )
+
 
 def sympy_func(args: Optional[list[float]] = None):
     if not args:
@@ -42,6 +43,7 @@ def sympy_func(args: Optional[list[float]] = None):
         return sympy_func.df1,sympy_func.df2
     return bi_dim_func(args)
 
+
 def sympy_grad(
     func: Callable,
     args: list[float],
@@ -54,6 +56,7 @@ def sympy_grad(
     ])
 
     return grad.tolist()
+
 
 def sympy_grad_desc(
     func: Callable,
@@ -217,7 +220,9 @@ def main():
     ax2 = fig.add_subplot(122, projection='3d')
     plot3d(metrics_min2,30,"Trajetória do Segundo Mínimo",ax2)
 
+    #plt.savefig('trab1_part4.png', dpi=300, bbox_inches='tight')
     plt.show()
+
 
     
 
